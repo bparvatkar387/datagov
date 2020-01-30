@@ -2,10 +2,16 @@ package com.example.demo_tebbed;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class SqliteDatabse extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "hospital.db";
@@ -57,33 +63,33 @@ public class SqliteDatabse extends SQLiteOpenHelper {
 
     public SqliteDatabse(@Nullable Context context) {
         super(context, DATABASE_NAME, null, 1);
+
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_HOSPITAL);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_BLOODBANK);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_DOCTOR);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_FACILITIES);
         String createDB = "CREATE TABLE " + TABLE_HOSPITAL + " ("+COL_1 + " INTEGER PRIMARY KEY, " +COL_2+ " TEXT, "+ COL_3+ " TEXT, "+ COL_4+ " TEXT, "+ COL_5+ " TEXT, "+ COL_6+ " TEXT, "+ COL_7+ " TEXT, "+ COL_8+ " TEXT, "+ COL_9+ " TEXT, "+ COL_10+ " TEXT, "+ COL_11+ " TEXT)";
+        Log.i("marudatabase",createDB);
         db.execSQL(createDB);
-        String createF = "CREATE TABLE " + TABLE_FACILITIES + " ("+FCOL_1 + " INTEGER PRIMARY KEY , " +FCOL_2+ " TEXT, "+ FCOL_3+ " INTEGER)";
+       String createF = "CREATE TABLE " + TABLE_FACILITIES + " ("+FCOL_1 + " INTEGER PRIMARY KEY , " +FCOL_2+ " TEXT, "+ FCOL_3+ " INTEGER)";
         db.execSQL(createF);
-        String createD = "CREATE TABLE " + TABLE_DOCTOR + " ("+DCOL_1 + " INTEGER PRIMARY KEY, " +DCOL_2+ " TEXT, "+ DCOL_3+ " TEXT, "+ DCOL_4+ " TEXT, "+ DCOL_5+ " TEXT, "+ DCOL_6+ " INTEGER)";
-        db.execSQL(createD);
-        String createB = "CREATE TABLE " + TABLE_BLOODBANK + " ("+BCOL_1 + " INTEGER PRIMARY KEY, " +BCOL_2+ " TEXT, "+ BCOL_3+ " TEXT, "+BCOL_4+ " TEXT, "+ BCOL_5+ " TEXT, "+ BCOL_6+ " TEXT, "+ BCOL_7+ " TEXT, "+ BCOL_8+ " TEXT, "+ BCOL_9+ " TEXT, "+ BCOL_10+ " INTEGER, "+ BCOL_11+ " INTEGER, "+ BCOL_12+ " TEXT, "+ BCOL_13+ " INTEGER, "+ BCOL_14+ " INTEGER, "+ BCOL_15+ " INTEGER, "+ BCOL_16+ " INTEGER, "+ BCOL_17+ " INTEGER)";
+       String createD = "CREATE TABLE " + TABLE_DOCTOR + " ("+DCOL_1 + " INTEGER PRIMARY KEY, " +DCOL_2+ " TEXT, "+ DCOL_3+ " TEXT, "+ DCOL_4+ " TEXT, "+ DCOL_5+ " TEXT, "+ DCOL_6+ " INTEGER)";
+       db.execSQL(createD);
+      String createB = "CREATE TABLE " + TABLE_BLOODBANK + " ("+BCOL_1 + " INTEGER PRIMARY KEY, " +BCOL_2+ " TEXT, "+ BCOL_3+ " TEXT, "+BCOL_4+ " TEXT, "+ BCOL_5+ " TEXT, "+ BCOL_6+ " TEXT, "+ BCOL_7+ " TEXT, "+ BCOL_8+ " TEXT, "+ BCOL_9+ " TEXT, "+ BCOL_10+ " INTEGER, "+ BCOL_11+ " INTEGER, "+ BCOL_12+ " TEXT, "+ BCOL_13+ " INTEGER, "+ BCOL_14+ " INTEGER, "+ BCOL_15+ " INTEGER, "+ BCOL_16+ " INTEGER, "+ BCOL_17+ " INTEGER)";
         db.execSQL(createB);
 
     }
     @Override
     public void onUpgrade(SQLiteDatabase db, int i, int i1) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_HOSPITAL);
-        onCreate(db);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_FACILITIES);
-        onCreate(db);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_DOCTOR);
-        onCreate(db);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_BLOODBANK);
         onCreate(db);
     }
 
     public boolean addHospital(int hid,String hname,String hpgflag,String haddress,String hstate,String hdist,String hnumber,String hemail,String hwebsite ,String hlocation,String htime){
+
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COL_1,hid);
@@ -97,13 +103,17 @@ public class SqliteDatabse extends SQLiteOpenHelper {
         contentValues.put(COL_9,hwebsite);
         contentValues.put(COL_10,hlocation);
         contentValues.put(COL_11,htime);
+
         long result = db.insert(TABLE_HOSPITAL,null,contentValues);
         if(result == -1){
             return false;
         }else {
             return true;
         }
+
     }
+
+
 
 
     public boolean addFacilities(int fid,String fname,int hid){
@@ -157,7 +167,7 @@ public class SqliteDatabse extends SQLiteOpenHelper {
         contentValues.put(BCOL_16,babp);
         contentValues.put(BCOL_17,babn);
 
-        long result = db.insert(TABLE_HOSPITAL,null,contentValues);
+        long result = db.insert(TABLE_BLOODBANK,null,contentValues);
         if(result == -1){
             return false;
         }else {
@@ -165,5 +175,123 @@ public class SqliteDatabse extends SQLiteOpenHelper {
         }
     }
 
+    public String showHospitals(){
+        SQLiteDatabase db =this.getWritableDatabase();
+        Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_HOSPITAL, null);
+        String r = cursorToString(res);
+        res.close();
+        return r;
+
+    }
+
+    public String showDoctorName(int h_id){
+        SQLiteDatabase db =this.getWritableDatabase();
+        Cursor res = db.rawQuery("SELECT "+ DCOL_1 + ", " + DCOL_2 + " FROM "+ TABLE_DOCTOR + " WHERE " + DCOL_6 + " = " + h_id, null);
+        String r = cursorToString(res);
+        res.close();
+        return r;
+
+    }
+
+    public String showBloodbank(){
+        SQLiteDatabase db =this.getWritableDatabase();
+        Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_BLOODBANK, null);
+        String r = cursorToString(res);
+        res.close();
+        return r;
+    }
+
+    public String ShowDoctorData(int h_id){
+        SQLiteDatabase db =this.getWritableDatabase();
+        Cursor res = db.rawQuery("SELECT "+ DCOL_2 + ", " + DCOL_3 + ", " + DCOL_5 + ", " + DCOL_4 + " FROM " + TABLE_DOCTOR + " WHERE " + DCOL_6 + " = " + h_id, null);
+        String r = cursorToString(res);
+        res.close();
+        return r;
+    }
+
+    public String showSelectedHospitals(String state, String district){
+        SQLiteDatabase db =this.getWritableDatabase();
+        //Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_HOSPITAL, null);
+
+        if(district == null){
+            Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_HOSPITAL + " WHERE " + COL_5 + " LIKE '%" + state + "%'", null);
+            String resSecHos = cursorToString(res);
+            res.close();
+            return resSecHos;
+        } else {
+            Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_HOSPITAL + " WHERE " + COL_5 + " LIKE '%" + state + "%' " + " AND " + COL_6 + " LIKE '%" + district + "%'", null);
+            String resSecHos = cursorToString(res);
+            res.close();
+            return resSecHos;
+
+        }
+
+
+
+
+
+    }
+
+
+
+
+    public void deleteAll()
+    {
+        SQLiteDatabase db =this.getWritableDatabase();
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_HOSPITAL);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_BLOODBANK);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_DOCTOR);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_FACILITIES);
+        onCreate(db);
+        db.close();
+
+    }
+    public String showHospi(int i){
+        SQLiteDatabase db =this.getWritableDatabase();
+        Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_HOSPITAL +" WHERE h_id=" + i , null);
+        String r = cursorToString(res);
+        return r;
+
+    }
+    public String showFacilities(int i){
+        SQLiteDatabase db =this.getWritableDatabase();
+        Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_FACILITIES +" WHERE h_id=" + i , null);
+        String r = cursorToString(res);
+        return r;
+
+    }
+
+
+    public String cursorToString(Cursor crs) {
+        JSONArray arr = new JSONArray();
+        crs.moveToFirst();
+        while (!crs.isAfterLast()) {
+            int nColumns = crs.getColumnCount();
+            JSONObject row = new JSONObject();
+
+            for (int i = 0 ; i < nColumns ; i++) {
+                String colName = crs.getColumnName(i);
+                if (colName != null) {
+                    String val = "";
+                    try {
+                        switch (crs.getType(i)) {
+                            case Cursor.FIELD_TYPE_BLOB   : row.put(colName, crs.getBlob(i).toString()); break;
+                            case Cursor.FIELD_TYPE_FLOAT  : row.put(colName, crs.getDouble(i))         ; break;
+                            case Cursor.FIELD_TYPE_INTEGER: row.put(colName, crs.getLong(i))           ; break;
+                            case Cursor.FIELD_TYPE_NULL   : row.put(colName, null)               ; break;
+                            case Cursor.FIELD_TYPE_STRING : row.put(colName, crs.getString(i))         ; break;
+                        }
+                    } catch (JSONException e) {
+                    }
+                }
+            }
+            Log.i("lowerSC", row.toString());
+            arr.put(row);
+            if (!crs.moveToNext())
+                break;
+        }
+        crs.close(); // close the cursor
+        return arr.toString();
+    }
 
 }

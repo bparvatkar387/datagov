@@ -1,6 +1,8 @@
 package com.example.demo_tebbed;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -9,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
@@ -35,11 +38,13 @@ public class Fragement_All extends Fragment {
 
     ArrayList<Iteam> mExampleList;
     RecyclerView recyclerView;
-    StringRequest stringRequest;
-    RequestQueue requestQueue;
-    String url = "http://rmcfindhospital.dx.am/hospitaldata.php";
     CustomAdapter customAdapter;
     EditText editText;
+    SharedPreferences sharedPreferences;
+    SharedPreferences.Editor editor;
+
+    SqliteDatabse sqliteDatabse;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -51,12 +56,40 @@ public class Fragement_All extends Fragment {
         recyclerView.setLayoutManager(manager);
         recyclerView.setHasFixedSize(true);
 
+        sharedPreferences = getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        editor = sharedPreferences.edit();
 
-        try {
-            fetchDataFromInternet();
-        } catch (JSONException e) {
-            e.printStackTrace();
-            System.out.println("locah locah all locha : "+e);
+        boolean all = sharedPreferences.getBoolean("all", true);
+
+        sqliteDatabse = new SqliteDatabse(getActivity());
+        String result = sqliteDatabse.showHospitals();
+        if(all){
+            System.out.println(result);
+            try {
+                fillHospitalsFromDB(result);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        } else {
+            String state = sharedPreferences.getString("state", "");
+            String district = sharedPreferences.getString("district", "");
+            if(state.equals("") || state.equals("Select State")){
+                try {
+                    fillHospitalsFromDB(result);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                Log.i("lowerS", state);
+                String stateHospital = sqliteDatabse.showSelectedHospitals(state, district);
+                Log.i("lowerS", stateHospital);
+                try {
+                    fillHospitalsFromDB(stateHospital);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
         }
         editText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -77,6 +110,26 @@ public class Fragement_All extends Fragment {
 
         return view;
     }
+
+    private void fillHospitalsFromDB(String result) throws JSONException {
+        JSONArray jsonArray = new JSONArray(result);
+
+        mExampleList.clear();
+        Log.i("arrLen", String.valueOf(jsonArray.length()));
+
+        for (int i = 0; i < jsonArray.length(); i++) {
+            JSONObject json = jsonArray.getJSONObject(i);
+            Log.i("adapter1", Integer.toString(i) + json.toString());
+            int id = json.getInt("h_id");
+            String name = json.getString("h_name");
+            String pgflag = json.getString("h_pgflag");
+            Iteam iteam = new Iteam(id,name,pgflag);
+            mExampleList.add(iteam);
+        }
+        customAdapter = new CustomAdapter(mExampleList,getContext());
+        recyclerView.setAdapter(customAdapter);
+    }
+
     private void filter(String text) {
         ArrayList<Iteam> filteredList = new ArrayList<Iteam>();
 
@@ -89,34 +142,7 @@ public class Fragement_All extends Fragment {
         customAdapter.filterList(filteredList);
     }
 
-    public void fetchDataFromInternet() throws JSONException {
-        JSONObject jsonObject = new JSONObject(loadJSONFromAsset());
-        JSONArray jsonArray = jsonObject.getJSONArray("hospitallist");
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject json = jsonArray.getJSONObject(i);
-            int id = json.getInt("h_id");
-            String name = json.getString("h_name");
-            String pgflag = json.getString("h_pgflag");
-            Iteam iteam = new Iteam(id,name,pgflag);
-            mExampleList.add(iteam);
-        }
-        customAdapter = new CustomAdapter(mExampleList,getContext());
-        recyclerView.setAdapter(customAdapter);
-    }
-    public String loadJSONFromAsset() {
-        String json = null;
-        try {
-            InputStream is = getActivity().getAssets().open("allhospitaldata.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            json = new String(buffer, "UTF-8");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
-        return json;
-    }
+
+
 
 }
